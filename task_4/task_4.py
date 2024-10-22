@@ -76,7 +76,10 @@ def show_phone(args, contacts):
 
 
 def show_all(contacts):
-    contacts_list = [f"{name:>20} | {contacts.get(name)}" for name in contacts.keys()]    
+    size = 20
+    dash_row = "-" * (size * 2 + 1)
+    header = [dash_row, f"{'NAME':^{size}}| {'PHONE':^{size}}", dash_row]
+    contacts_list = header + [f"{name:<{size}}|{contacts.get(name):^{size}}" for name in contacts.keys()]    
     return "\n".join(contacts_list)
 
 
