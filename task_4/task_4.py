@@ -1,44 +1,82 @@
+import re
+
+phone_number_pattern = re.compile(r"\(\d{3}\)\d{3}-\d{2}-\d{2}")
+
+
 def parse_input(user_input):
     cmd, *args = user_input.split()
-    cmd = cmd.strip().lower()
+    cmd = cmd.strip().lower()    
     return cmd, *args
 
 
-def contact_exists(name, contacts):
-    return name in contacts.values()
+def input_error(func):
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except KeyError as e:
+            return f"[ERROR] Data inconsistency: {e}"
+        except ValueError as e:            
+            return f"[ERROR] Unsupported format: {e}"
+        except IndexError as e:
+            return f"[ERROR] Arguments mismatch: {e}"
+
+    return inner
 
 
+def validate_arguments(args, expected):
+    if len(args) != expected:
+        raise IndexError(f"Arguments: expected='1', provided='{len(args)}'.")
+
+
+def validate_phone(phone):
+    if not phone_number_pattern.match(phone):
+        raise ValueError(f"Phone number format: expected='(XXX)XXX-XX-XX', provided='{phone}'.")
+    
+
+def validate_contact(name, contacts):
+    if not contacts.get(name):
+        raise KeyError(f"Contact with name '{name}' does not exist.")
+    
+
+@input_error
 def add_contact(args, contacts):
+    validate_arguments(args, 2)
+    
     name, phone = args
-
     if contacts.get(name):
         raise KeyError(f"Contact with name '{name}' already exists.")
     
-    contacts[name] = phone
+    validate_phone(phone)
+
+    contacts[name] = phone    
     return "Contact added."
 
 
+@input_error
 def change_contact(args, contacts):
+    validate_arguments(args, 2)
+    
     name, phone = args
 
-    if not contacts.get(name):
-        raise KeyError(f"Contact with name '{name}' does not exist.")
+    validate_phone(phone)
+    validate_contact(name, contacts)    
     
-    contacts[name] = phone
+    contacts[name] = phone    
     return "Contact updated."
 
 
+@input_error
 def show_phone(args, contacts):
-    name, = args
+    validate_arguments(args, 1)
+    
+    name, = args 
 
-    if not contacts.get(name):
-        raise KeyError(f"Contact with name '{name}' does not exist.")
-        
-    return  contacts.get(name)
+    validate_contact(name, contacts)
+    return contacts[name]
 
 
 def show_all(contacts):
-    contacts_list = [f"{name:>15}: {contacts.get(name)}" for name in contacts.keys()]
+    contacts_list = [f"{name:>20} | {contacts.get(name)}" for name in contacts.keys()]    
     return "\n".join(contacts_list)
 
 
@@ -47,34 +85,31 @@ def main():
     print("Welcome to the assistant bot!")
             
     while True:
-        try:
-            user_input = input("Enter a command: ")
-            command, *args = parse_input(user_input)
+        user_input = input("Enter a command: ")
+        command, *args = parse_input(user_input)
 
-            match command:
-                case "add":
-                    print(add_contact(args, contacts))
+        match command:
+            case "add":
+                print(add_contact(args, contacts))
 
-                case "change":
-                    print(change_contact(args, contacts))
+            case "change":
+                print(change_contact(args, contacts))
 
-                case "phone":
-                    print(show_phone(args, contacts))
+            case "phone":
+                print(show_phone(args, contacts))
 
-                case "all":
-                    print(show_all(contacts))
+            case "all":
+                print(show_all(contacts))
 
-                case "hello":
-                    print("How can I help you?")
+            case "hello":
+                print("How can I help you?")
 
-                case "close" | "exit":
-                    print("Good bye!")
-                    break
+            case "close" | "exit":
+                print("Good bye!")
+                break
 
-                case _:
-                    print("Invalid command.")
-        except (KeyError, ValueError) as e:
-            print(f"[ERROR]: {e}")
+            case _:
+                print("Invalid command.")
 
 
 if __name__ == "__main__":
